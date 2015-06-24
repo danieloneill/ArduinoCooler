@@ -13,7 +13,11 @@ By default the code will attempt to cool the cabinet/room to 7c +- 3c. This "buf
 
 This expects an I2C LCD panel to be connected (particularly via LiquidCrystal_I2C) and a DHT22 (or DHT11, but you'd need to change a line of code) temperature sensor. It is also written for the Wiznet W5100 shield for network connectivity.
 
-The display will show current phase, temperature, and sensor status.
+The display will show 3 pages (alternating every 5 seconds) as follows:
+1. Current phase, phase time remaining, temperature, and sensor status.
+2. IP address and current time.
+3. Product/version and uptime.
+4. Scheduled start/stop times.
 
 Pins are declared near the top such that you can select your Low, Medium, and High Fan relay pins as well as the Compressor pin.
 
@@ -25,7 +29,7 @@ Some people would put a disclaimer here to remind you of the hazards of dissecti
  * Ensure your unit doesn't use electrically actuated valves, this code can't/won't handle those. Again, this would be a bomb.
  * Start/run capacitors are dinky, yes, but can kill you. Discharge them before you touch ANYthing, and be careful about shorting them.
 
-One more tip (since it happened to me): Does your compressor fire up but sound like a Harley Davidson &copy;? Your relay is probably solid state and overtaxed. When this happens the fancier ones will "back off" and click back on after cooling down, but this may happen 200 to 1000ms later, causing hammering. Cheaper relays sometimes just turn into diodes, making the compressor operate at half phase. They don't run well at half phase, and will sound more like a jackhammer. The solution is to use your relay to actuate a mechanical 110ac coil relay or contactor.
+One more tip (since it happened to me): Does your compressor fire up but sound like a Harley Davidson &copy;? Your relay is probably solid state and overtaxed. When this happens the fancier ones will "back off" and click back on after cooling down, but this may happen 200 to 1000ms later, causing hammering. Cheaper relays sometimes just turn into diodes, making the compressor operate at half phase. They don't run well at half phase, and will sound more like a jackhammer. Mechanical relays are best.
 
 Also make sure you know which wire goes where and does what before you start ripping out the stock controller. This should go without saying, but, well, it takes all kinds, doesn't it?
 
@@ -86,7 +90,7 @@ Here's what each parameter means:
    * Defrost - Couldn't reach target temp in 'max' seconds, just warming up the pipes before trying again. This is configured with the 'thaw' parameter.
    * Unknown - Something broke.
  * temp - The current temperature in C
- * stoff - How many seconds are left in the active phase
+ * stoff - How many seconds are left in the active phase (or in the case of 'Fan' phase, how long we've been in that phase.)
 
 
 ### Declarations

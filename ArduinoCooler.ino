@@ -302,8 +302,11 @@ void lcdSlide()
     lcd.print(stageName(stage));
     if( stage != INIT )
     {
+      uint32_t dur = (timeOff - n);
+      if( stage == FAN )
+        dur = 0 - dur; // Show positive number, tells user how long we've been in FAN phase.
       lcd.print(F(" for "));
-      lcd.print((int)(timeOff - n));
+      lcd.print(dur);
       lcd.print(F("s"));
     }
     lcd.setCursor(0, 1);
@@ -527,7 +530,10 @@ void updateStage()
       // Minimum duty cycle not met yet, keep going on...
       return;
     }
-    
+
+    if( stage == FAN )
+      return;
+
     stage = FAN;
     timeOn = n;
     timeOff = n;
@@ -563,8 +569,9 @@ void sendStatus(EthernetClient &client)
   uint32_t n = now();
   int x;
   client.println(F("HTTP/1.1 200 OK"));
-  client.println(F("Content-Type: text/plain"));
   client.println(F("Connection: close"));
+  client.println(F("Access-Control-Allow-Origin: *"));
+  client.println(F("Content-Type: text/plain"));
   client.println();
   sendQuad(client, F("a=s&ip="), ip);
   sendQuad(client, F("&dns="), nameserver);
