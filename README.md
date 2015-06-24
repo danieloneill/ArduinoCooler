@@ -11,7 +11,7 @@ THAWTIME 5:00
 
 By default the code will attempt to cool the cabinet/room to 7c +- 3c. This "buffer" implies that if it reaches (for example) 9c in 15 minutes it will circulate rather than thaw, but also that it can cool to as low as 4c before terminating the cooling phase (otherwise it'll run until MINRUN is reached, 5 minutes).
 
-This expects an I2C LCD panel to be connected (particularly via LiquidCrystal_I2C) and a DHT22 (or DHT11, but you'd need to change a line of code) temperature sensor.
+This expects an I2C LCD panel to be connected (particularly via LiquidCrystal_I2C) and a DHT22 (or DHT11, but you'd need to change a line of code) temperature sensor. It is also written for the Wiznet W5100 shield for network connectivity.
 
 The display will show current phase, temperature, and sensor status.
 
@@ -29,15 +29,58 @@ One more tip (since it happened to me): Does your compressor fire up but sound l
 
 Also make sure you know which wire goes where and does what before you start ripping out the stock controller. This should go without saying, but, well, it takes all kinds, doesn't it?
 
-Now to the fun stuff. Here are some declarations of importance:
+Now to the fun stuff. The default IP on the Ethernet is 192.168.3.55 and putting http://192.168.3.55 into your browser will spit out a string like this:
 
- * int adjustment - In degrees Celsius, this is meant to compensate for cheapo sensors that run hot or cold by a few degrees.
- * int tempBuffer - In degrees Celsius, how close to the "tempTarget" is "good enough". Defaults to 3c and tempTarget defaults to 7c, so 8c is considered "good enough", while 11c wouldn't be.
- * int tempTarget - How cold you want your whatever, it'll pound away as long as it takes trying to hit this sweet spot.
+```a=s&ip=192.168.3.55&dns=8.8.8.8&nm=255.255.255.0&gw=192.168.3.1&adj=0&on=28800&off=84600&targ=-5&buf=3&thaw=300&min=300&max=900&toff=-21600&timeUrl=google.ca&st=Sleep&temp=17.70&stoff=7419```
 
- * THAWTIME - How long to run the DEFROST cycle. This happens when the COOLING phase runs for a maximum interval (15 mins by default) but can't hit the target temperature.
- * MINRUN - In the cooling phase it's possible that after only 5-10 seconds the room will reach the target temperature, but the phase will continue until either this time has expired or the temperature hits ( tempTarget - tempBuffer )
- * MAXRUN - If the cooling phase has run this long (and we still haven't hit our target temperature), run a DEFROST phase before trying again.
+To configure your controller, simply append '?' and this string (with your changes) to your URL with the action changed to 'c', as below:
+
+```http://192.168.3.55?a=c&ip=192.168.3.55&dns=8.8.8.8&nm=255.255.255.0&gw=192.168.3.1&adj=0&on=28800&off=84600&targ=-5&buf=3&thaw=300&min=300&max=900&toff=-21600&timeUrl=google.ca&st=Sleep&temp=17.70&stoff=7419```
+
+In the above example it would simply configure the controller with the exact parameters it already had (changing nothing), and also pass a few parameters that are read-only (particularly st, temp, and stoff.)
+
+You can specify all, one, or a few parameters per request:
+
+```http://192.168.3.55?a=c&on=25200&off=79200&targ=-2```
+
+```http://192.168.3.55?a=c&buf=2&thaw=180&min=600&max=1200```
+
+```http://192.168.3.55?a=c&timeUrl=github.com```
+
+
+Here's what each parameter means:
+
+ * a - Action
+   * s - Status
+   * c - Configure
+
+ * ip - The IP address assigned to the controller
+ * dns - The namserver address the controller is using
+ * nm - The netmask configured for the controller
+ * gw - The default gateway used by the controller
+ * adj - In degrees Celsius, this is meant to compensate for cheapo sensors that run hot or cold by a few degrees.
+ * on - When to start for the day. This is in seconds since midnight.
+ * off - When to stop for the day. This is in seconds since midnight.
+ * targ - How cold you want your whatever, it'll pound away as long as it takes trying to hit this sweet spot.
+ * buf - In degrees Celsius, how close to the "tempTarget" is "good enough". Defaults to 3c and tempTarget defaults to 7c, so 8c is considered "good enough", while 11c wouldn't be.
+ * thaw - How long to run the DEFROST cycle. This happens when the COOLING phase runs for a maximum interval (15 mins by default) but can't hit the target temperature.
+ * min - In the cooling phase it's possible that after only 5-10 seconds the room will reach the target temperature, but the phase will continue until either this time has expired or the temperature hits ( tempTarget - tempBuffer )
+ * max - If the cooling phase has run this long (and we still haven't hit our target temperature), run a DEFROST phase before trying again.
+ * toff - Local time offset against UTC in seconds. For example, I'm UTC-06:00, so I use ( 0 - (6 * 60 * 60) ) or -21600.
+ * timeUrl - Just some webhost to grab the Date/Time from. It's taken from the "Date" response header which (should) is always in UTC.
+ * st - Stage. This can be one of:
+   * Sleep - Outside of running schedule, so it's sleeping.
+   * Init - Starting up. This is also when the current time is fetched.
+   * Fan - At target temperature, just circulating air.
+   * Cool - Heatpump running to cool.
+   * Defrost - Couldn't reach target temp in 'max' seconds, just warming up the pipes before trying again. This is configured with the 'thaw' parameter.
+   * Unknown - Something broke.
+ * temp - The current temperature in C
+ * stoff - How many seconds are left in the active phase
+
+
+### Declarations
+#### Mostly just which pin goes where~
 
  * DHT11_PIN - ... or DHT22. This is which pin you're using to talk to the sensor.
  * FAN_PIN - The pin going to the "low speed" fan relay.
