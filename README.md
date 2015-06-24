@@ -31,21 +31,26 @@ Also make sure you know which wire goes where and does what before you start rip
 
 Now to the fun stuff. The default IP on the Ethernet is 192.168.3.55 and putting http://192.168.3.55 into your browser will spit out a string like this:
 
-```a=s&ip=192.168.3.55&dns=8.8.8.8&nm=255.255.255.0&gw=192.168.3.1&adj=0&on=28800&off=84600&targ=-5&buf=3&thaw=300&min=300&max=900&toff=-21600&timeUrl=google.ca&st=Sleep&temp=17.70&stoff=7419```
+```a=s&ip=192.168.3.55&dns=8.8.8.8&nm=255.255.255.0&gw=192.168.3.1&adj=0&on=28800&off=84600&targ=-5&buf=3&thaw=300&min=300&max=900&toff=-21600&timeUrl=google.ca&st=Sleep&temp=17.70&stoff=7419
+```
 
 To configure your controller, simply append '?' and this string (with your changes) to your URL with the action changed to 'c', as below:
 
-```http://192.168.3.55?a=c&ip=192.168.3.55&dns=8.8.8.8&nm=255.255.255.0&gw=192.168.3.1&adj=0&on=28800&off=84600&targ=-5&buf=3&thaw=300&min=300&max=900&toff=-21600&timeUrl=google.ca&st=Sleep&temp=17.70&stoff=7419```
+```http://192.168.3.55?a=c&ip=192.168.3.55&dns=8.8.8.8&nm=255.255.255.0&gw=192.168.3.1&adj=0&on=28800&off=84600&targ=-5&buf=3&thaw=300&min=300&max=900&toff=-21600&timeUrl=google.ca&st=Sleep&temp=17.70&stoff=7419
+```
 
 In the above example it would simply configure the controller with the exact parameters it already had (changing nothing), and also pass a few parameters that are read-only (particularly st, temp, and stoff.)
 
 You can specify all, one, or a few parameters per request:
 
-```http://192.168.3.55?a=c&on=25200&off=79200&targ=-2```
+```http://192.168.3.55?a=c&on=25200&off=79200&targ=-2
+```
 
-```http://192.168.3.55?a=c&buf=2&thaw=180&min=600&max=1200```
+```http://192.168.3.55?a=c&buf=2&thaw=180&min=600&max=1200
+```
 
-```http://192.168.3.55?a=c&timeUrl=github.com```
+```http://192.168.3.55?a=c&timeUrl=github.com
+```
 
 
 Here's what each parameter means:
