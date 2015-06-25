@@ -503,7 +503,7 @@ void updateStage()
         // Ran this long, still haven't cooled enough. Defrost for ~5 minutes.
         stage = DEFROST;
         timeOn = n;
-        timeOff = n + maxruntime;
+        timeOff = n + thawtime;
         setStage();
       }
       else
