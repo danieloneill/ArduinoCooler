@@ -55,6 +55,9 @@ uint32_t minruntime = (5 * 60);
 // in seconds; "on" duty cycle maximum.
 uint32_t maxruntime = (15 * 60);
 
+// coldest it's been since starting COOL phase
+double coldesttemp = 0;
+
 // Sensor:
 dht DHT;
 char dhtstatus[16];
@@ -277,6 +280,7 @@ void setup() {
   readConfig();
   setupLCD();
   lcdSlide();
+
   setupEthernet();
   setupTime();
 
@@ -448,6 +452,7 @@ void setStage()
   if( stage == OFF )
   {
     fanPin = 0;
+    fanMediumPin = 0;
     fanHighPin = 0;
     compressorPin = 0;
   }
@@ -463,12 +468,24 @@ void setStage()
     fanPin = 1;
     fanMediumPin = 1;
     fanHighPin = 1;
+    compressorPin = 0;
   }
+
+#ifdef DEBUG
+  Serial.print(F("Pins: "));
+  Serial.print(compressorPin);
+  Serial.print(F("/"));
+  Serial.print(fanPin);
+  Serial.print(F("/"));
+  Serial.print(fanMediumPin);
+  Serial.print(F("/"));
+  Serial.println(fanHighPin);
+#endif
     
-  digitalWrite( FAN_PIN, fanPin );
-  digitalWrite( FANMEDIUM_PIN, fanMediumPin );
-  digitalWrite( FANHIGH_PIN, fanHighPin );
-  digitalWrite( COMPRESSOR_PIN, compressorPin );
+  digitalWrite( FAN_PIN, fanPin == 0 );
+  digitalWrite( FANMEDIUM_PIN, fanMediumPin == 0 );
+  digitalWrite( FANHIGH_PIN, fanHighPin == 0 );
+  digitalWrite( COMPRESSOR_PIN, compressorPin == 0 );
 }
 
 void updateStage()
@@ -507,7 +524,12 @@ void updateStage()
         setStage();
       }
       else
+      {
+        if( DHT.temperature < coldesttemp )
+          coldesttemp = DHT.temperature;
+          
         return; // Keep fighting!
+      }
     }
     else
     {
@@ -516,7 +538,8 @@ void updateStage()
         // Not yet...
         return;
       }
-      
+
+      coldesttemp = DHT.temperature;
       stage = COOLING;
       timeOn = n;
       timeOff = n + maxruntime;
@@ -594,6 +617,8 @@ void sendStatus(EthernetClient &client)
   client.print(DHT.temperature + adjustment);
   client.print(F("&stoff="));
   client.print((int)(timeOff - n));
+  client.print(F("&v="));
+  client.println(EEPROM_VERSION);
 }
 
 void parseQuad(char *val, byte *into)
@@ -759,6 +784,28 @@ void handlePacket()
   }
 }
 
+void avoidFrostingOver()
+{
+  if( stage != COOLING )
+    return;
+
+  if( DHT.temperature < coldesttemp )
+  {
+    coldesttemp = DHT.temperature;
+    return;
+  }
+
+  if( coldesttemp < (DHT.temperature - tempBuffer) )
+  {
+    // We've come up <tempBuffer> degrees, gotta defrost.
+    time_t n = now();
+    stage = DEFROST;
+    timeOn = n;
+    timeOff = n + thawtime;
+    setStage();
+  }
+}
+
 void loop() {
   delay(10);
 
@@ -767,6 +814,8 @@ void loop() {
   if( loops % 100 == 0 )
   {
     readStatus();
+
+    avoidFrostingOver();
 
     updateStage();
 
